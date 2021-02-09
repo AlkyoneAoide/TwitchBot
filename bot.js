@@ -1,18 +1,10 @@
 // Define configuration options
-const opts = {
-	//Username and oauth token of bot
-    identity: {
-    	username: "",
-    	password: ""
-    },
-    //Username of channels you want bot to be present in
-    channels: [
-    	""
-    ]
-};
+const opts = $.ajax({dataType: "json", url: './opts.json', async: false}).responseJSON
+console.log(opts)
 
-	// Create a client with our options
+// Create a client with our options
 const client = new tmi.client(opts);
+
 function main() {
 
 	// Register our event handlers (defined below)
@@ -21,7 +13,6 @@ function main() {
 
 	// Connect to Twitch:
 	client.connect();
-	//consolelog('Connecting...')
 }
 
 function remapInt(x, minBefore, maxBefore, minAfter, maxAfter) {
@@ -64,24 +55,23 @@ function onMessageHandler (target, context, msg, self) {
     const commandName = msg.trim();
 
     // If the command is known, let's execute it
-    // if (commandName === '!dice') {
-    //     const num = rollDice();
-    // 	client.say(target, `You rolled a ${num}`);
-    // 	console.log(`* Executed ${commandName} command`);
-    // } else {
-    // 	consolelog(`${commandName}`);
-    // }
+    if (commandName === '!dice') {
+        const num = rollDice();
+    	client.say(target, `You rolled a ${num}`);
+    	console.log(`* Executed ${commandName} command`);
+    } else {
+    	consolelog(`${commandName}`);
+    }
 }
 
 // Function called when the "dice" command is issued
-// function rollDice () {
-//     const sides = 6;
-//     return remapInt(Math.random(), 0, 1, 1, 6); // Math.floor(Math.random() * sides) + 1;
-// }
+function rollDice () {
+    const sides = 6;
+    return remapInt(Math.random(), 0, 1, 1, 6); // Math.floor(Math.random() * sides) + 1;
+}
 
 // Called every time the bot connects to Twitch chat
 function onConnectedHandler (addr, port) {
-    //consolelog('Connected');
     console.log(`* Connected to ${addr}:${port}`);
 }
 
