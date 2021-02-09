@@ -1,13 +1,11 @@
 // If you want to use this file, rename it to opts.json
 
 {
-	//Username and oauth token of bot
     "identity": {
-        "username": "",
-        "password": ""
+        "username": "MyBot",
+        "password": "oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   },
-    //Username of channels you want bot to be present in
     "channels": [
-        ""
+        "MyChannel"
     ]
 }
