@@ -23,8 +23,8 @@ function overlay(msg) {
 	const fontSize = remapInt(Math.random(), 0, 1, 30, 45)
 	const textSpeed = remapInt(Math.random(), 0, 1, 2000, 5000)
 	const x = Math.random()
-	const pct = 0.75
-	const textPosition = (x < pct) ? remapInt(x, 0, pct, 0, 50) : remapInt(x, pct, 1, 50, 100)
+	const bias = 0.75
+	const textPosition = (x < bias) ? remapInt(x, 0, bias, 0, 50) : remapInt(x, bias, 1, 50, 100)
 	const element = $('<div>', { text: msg })
 		.addClass('msg')
 		.css({ 'font-size': fontSize, 'top': `${textPosition}vh` })
