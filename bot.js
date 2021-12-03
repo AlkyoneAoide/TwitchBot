@@ -1,46 +1,26 @@
-// Define configuration options
-const opts = $.ajax({dataType: 'json', url: './opts.json', async: false}).responseJSON
+// "imports"
+const tmi = require('tmi.js')
+const WebSockets = require('./ws/index.js')
 
-// Create a client with our options
-const client = new tmi.client(opts)
+// Define configuration options
+const tmiSettings = require('./channel-settings.json')
+const clientSettings = require('./client-settings.json')
+
+// Create a tmi client with our options
+const tmiServer = new tmi.client(tmiSettings)
+// Create separate websocket server
+const wss = new WebSockets.WebSocketServer({ port:8974 })
+// const ws = new WebSockets.WebSocket('ws://127.0.0.1:8974')
+
 
 function main() {
 
 	// Register our event handlers (defined below) and connect
-	client.on('message', onMessageHandler)
-	client.on('connected', onConnectedHandler)
-	client.connect()
-}
+	tmiServer.on('message', onMessageHandler)
+	tmiServer.on('connected', onConnectedHandler)
+	tmiServer.connect()
 
-function remapInt(x, minBefore, maxBefore, minAfter, maxAfter) {
-	const xIn0To1 = (x - minBefore) / (maxBefore - minBefore)
-	const xInAfterRange = xIn0To1 * (maxAfter - minAfter) + minAfter
-	return Math.floor(xInAfterRange)
-}
-
-// Output with message text
-function overlay(msg) {
-	const fontSize = remapInt(Math.random(), 0, 1, 30, 45)
-	const textSpeed = remapInt(Math.random(), 0, 1, 2000, 5000)
-	const x = Math.random()
-	const bias = 0.75
-	const textPosition = (x < bias) ? remapInt(x, 0, bias, 0, 50) : remapInt(x, bias, 1, 50, 100)
-	const element = $('<div>', { text: msg })
-		.addClass('msg')
-		.css({ 'font-size': fontSize, 'top': `${textPosition}vh` })
-
-	const textLifespan = setTimeout(function(){ element.remove() }, 15000)
-	
-	$('body').append( element )
-	
-	function animate() {
-		const msgWidth = element.width()
-		console.log(msgWidth)
-		element.css({ 'right': `${-msgWidth}px` })
-		.animate({ right: '100vw' }, textSpeed, 'linear')
-	}
-	
-	window.requestAnimationFrame(animate)
+    wss.on('connection', webSocketConnected )
 }
 
 // Called every time a message comes in
@@ -51,7 +31,8 @@ function onMessageHandler (target, context, msg, self) {
     // Remove whitespace from chat message
     const message = msg.trim()
 
-    overlay(message)
+    // instead of calling overlay() send message via websocket
+    // overlay(message)
 }
 
 // Called every time the bot connects to Twitch chat
@@ -59,4 +40,23 @@ function onConnectedHandler (addr, port) {
     console.log(`* Connected to ${addr}:${port}`)
 }
 
-$(document).ready(main)
+// Called every time there is a websocket message
+function webSocketMessage(ws, data) {
+    data = String(data)
+    let obj = {}
+
+    for (const line of data.split('\n')) {
+        let key = line.slice(0, line.indexOf(':')).toLowerCase()
+        let value = line.slice(line.indexOf(':') + 1)
+        obj[key] = value
+    }
+    ws.send(JSON.stringify(obj))
+    console.log(JSON.stringify(obj))
+}
+
+// Called every time the bot connects to a new websocket client
+function webSocketConnected(ws) {
+    ws.on('message', data => { webSocketMessage(ws, data); fn(ws); } )
+}
+
+main()

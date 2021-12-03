@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <style>
+      body {
+        background-color: #009933;
+      }
+      .msg {
+        font-family: verdana;
+        font-size: 35px;
+        font-weight: 700;
+        color: white;
+        -webkit-text-stroke-width: 2px;
+        -webkit-text-stroke-color: black;
+        position: fixed;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .music {
+        z-index: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="music">
+      <!-- f -->
+    </div>
+
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.min.js"
+      integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2"
+      crossorigin="anonymous">
+    </script>
+    <script>
+      //put all the cool stuff here
+
+      // remap x from range minBefore,maxBefore to range minAfter,maxAfter (ex. Math.random(), 0, 1, 0, 10)
+      function remapInt(x, minBefore, maxBefore, minAfter, maxAfter) {
+        const xIn0To1 = (x - minBefore) / (maxBefore - minBefore)
+        const xInAfterRange = xIn0To1 * (maxAfter - minAfter) + minAfter
+       return Math.floor(xInAfterRange)
+      }
+
+      // Output with message text
+      function overlay(msg) {
+        const fontSize = remapInt(Math.random(), 0, 1, 30, 45)
+        const textSpeed = remapInt(Math.random(), 0, 1, 2000, 5000)
+        const x = Math.random()
+        const bias = 0.75
+        const textPosition = (x < bias) ? remapInt(x, 0, bias, 0, 50) : remapInt(x, bias, 1, 50, 100)
+        const element = $('<div>', { text: msg })
+          .addClass('msg')
+          .css({ 'font-size': fontSize, 'top': `${textPosition}vh` })
+
+        const textLifespan = setTimeout(function(){ element.remove() }, 15000)
+  
+        $('body').append( element )
+  
+        function animate() {
+          const msgWidth = element.width()
+          console.log(msgWidth)
+          element.css({ 'right': `${-msgWidth}px` })
+            .animate({ right: '100vw' }, textSpeed, 'linear')
+        }
+  
+        window.requestAnimationFrame(animate)
+      }
+
+      /*
+        function to be websocket client and filter websocket data
+        if message call overlay(message) where message is a string
+        if spotify somehow update spotify thing
+
+        IF STATE = 0, AUDIO IS STOPPED SO HIDE SONG
+        IF STATE = 1, AUDIO IS PAUSED
+
+        TITLE, COVER, ALBUM, ARTIST (duration, position)
+      */
+    </script>
+  </body>
+</html>
