@@ -10,8 +10,6 @@ const clientSettings = require('./client-settings.json')
 const tmiServer = new tmi.client(tmiSettings)
 // Create separate websocket server
 const wss = new WebSockets.WebSocketServer({ port:8974 })
-// const ws = new WebSockets.WebSocket('ws://127.0.0.1:8974')
-
 
 function main() {
 
@@ -45,18 +43,25 @@ function webSocketMessage(ws, data) {
     data = String(data)
     let obj = {}
 
+    // Turn webnowplaying output into JSON
     for (const line of data.split('\n')) {
         let key = line.slice(0, line.indexOf(':')).toLowerCase()
         let value = line.slice(line.indexOf(':') + 1)
         obj[key] = value
     }
-    ws.send(JSON.stringify(obj))
-    console.log(JSON.stringify(obj))
+
+    // If the connected websocket is ready and not the server, send JSON
+    wss.clients.forEach(client => {
+        if (client !== ws && client.readyState === WebSockets.WebSocket.OPEN) {
+            client.send(JSON.stringify(obj))
+            console.log(obj + " sent to " + client)
+        }
+    })
 }
 
 // Called every time the bot connects to a new websocket client
 function webSocketConnected(ws) {
-    ws.on('message', data => { webSocketMessage(ws, data); fn(ws); } )
+    ws.on('message', data => webSocketMessage(ws, data))
 }
 
 main()

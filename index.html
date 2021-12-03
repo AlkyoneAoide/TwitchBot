@@ -32,6 +32,7 @@
     </script>
     <script>
       //put all the cool stuff here
+      const socket = new WebSocket("ws://127.0.0.1:8974")
 
       // remap x from range minBefore,maxBefore to range minAfter,maxAfter (ex. Math.random(), 0, 1, 0, 10)
       function remapInt(x, minBefore, maxBefore, minAfter, maxAfter) {
@@ -65,6 +66,10 @@
         window.requestAnimationFrame(animate)
       }
 
+      socket.onopen = (event => console.log("connection established"))
+      socket.onmessage = (event => console.log("message recieved: " + event.data))
+      socket.onerror = (err => console.log("socket error: " + err))
+      socket.onclose = (event => console.log("socket closed: " + event))
       /*
         function to be websocket client and filter websocket data
         if message call overlay(message) where message is a string
