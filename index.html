@@ -4,6 +4,7 @@
       body {
         background-color: #009933;
       }
+
       .msg {
         font-family: verdana;
         font-size: 35px;
@@ -15,24 +16,33 @@
         overflow: hidden;
         white-space: nowrap;
       }
-      .music {
+
+      #music {
         z-index: 1;
+        position: fixed;
+        bottom: 0;
+        overflow: hidden;
       }
     </style>
   </head>
   <body>
-    <div class="music">
-      <!-- f -->
-    </div>
-
     <script
       src="https://code.jquery.com/jquery-3.5.1.min.js"
       integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2"
       crossorigin="anonymous">
     </script>
     <script>
-      //put all the cool stuff here
-      const socket = new WebSocket("ws://127.0.0.1:8974")
+      settings = {}
+
+      function insertEmotes(msg) {
+        //TO DO BUILD THIS FUNCTION
+        // use this: https://gist.github.com/chuckxD/377211b3dd3e8ca8dc505500938555eb
+        // and this: https://static-cdn.jtvnw.net/emoticons/v2/emotesv2_4c3b4ed516de493bbcd2df2f5d450f49/static/light/1.0
+
+        $('<div>', { text: msg.message })
+          .addClass('msg')
+          .css({ 'font-size': fontSize, 'color' : msg.color, 'top': `${textPosition}vh` })
+      }
 
       // remap x from range minBefore,maxBefore to range minAfter,maxAfter (ex. Math.random(), 0, 1, 0, 10)
       function remapInt(x, minBefore, maxBefore, minAfter, maxAfter) {
@@ -42,44 +52,71 @@
       }
 
       // Output with message text
-      function overlay(msg) {
-        const fontSize = remapInt(Math.random(), 0, 1, 30, 45)
-        const textSpeed = remapInt(Math.random(), 0, 1, 2000, 5000)
+      function chatOverlay(msg) {
         const x = Math.random()
-        const bias = 0.75
+        const bias = settings.chat.bias
         const textPosition = (x < bias) ? remapInt(x, 0, bias, 0, 50) : remapInt(x, bias, 1, 50, 100)
-        const element = $('<div>', { text: msg })
-          .addClass('msg')
-          .css({ 'font-size': fontSize, 'top': `${textPosition}vh` })
+        const textSpeed = remapInt(msg.message.length, 500, 0, 3500, 5000)
+        const fontSize = remapInt(Math.random(), 0, 1, 30, 45)
 
-        const textLifespan = setTimeout(function(){ element.remove() }, 15000)
-  
+        //NEED TO FIGURE OUT WHAT MESSAGE TYPE IS
+
+        const element = insertEmotes(msg)
+
         $('body').append( element )
-  
+
         function animate() {
           const msgWidth = element.width()
-          console.log(msgWidth)
           element.css({ 'right': `${-msgWidth}px` })
-            .animate({ right: '100vw' }, textSpeed, 'linear')
+            .animate({ right: '100vw' }, textSpeed, 'linear', () => element.remove())
         }
   
         window.requestAnimationFrame(animate)
       }
 
-      socket.onopen = (event => console.log("connection established"))
-      socket.onmessage = (event => console.log("message recieved: " + event.data))
-      socket.onerror = (err => console.log("socket error: " + err))
-      socket.onclose = (event => console.log("socket closed: " + event))
-      /*
-        function to be websocket client and filter websocket data
-        if message call overlay(message) where message is a string
-        if spotify somehow update spotify thing
+      // Overlay for the music display, origin is bottom left corner
+      function musicOverlay(msg) {
+        //DO THIS
+        div = document.getElementById('music')
+        // div.appendChild(document.createTextNode(JSON.stringify(msg)))
+        console.log(msg)
+      }
 
-        IF STATE = 0, AUDIO IS STOPPED SO HIDE SONG
-        IF STATE = 1, AUDIO IS PAUSED
+      function connect() {
+        const socket = new WebSocket("ws://127.0.0.1:8974")
 
-        TITLE, COVER, ALBUM, ARTIST (duration, position)
-      */
+        socket.onopen = (event => console.log("connection established"))
+        socket.onmessage = (event => messageHandler(event.data))
+        socket.onerror = (err => {console.log("socket error: " + err); socket.close()})
+        socket.onclose = (event => {console.log("socket closed: " + event); reconnect()})
+
+        function messageHandler(data) {
+          data = JSON.parse(data)
+
+          if (data.settings) {
+            settings = data.settings
+            if (settings.music.webnowplaying) {
+              $('body').append($('<div>').attr('id', 'music')
+                .css({ 'max-width' : settings.music.width, 'width' : settings.music.width,
+                  'max-height' : settings.music.height, 'height' : settings.music.height }))
+            }
+          }
+
+          if (data.twitch) {
+            chatOverlay(data.twitch)
+          }
+
+          if (data.nowPlaying && settings.music.webnowplaying) {
+            musicOverlay(data.nowPlaying)
+          }
+        }
+
+        function reconnect() {
+          setTimeout(() => connect(), 5000)
+        }
+      }
+
+      connect()
     </script>
   </body>
 </html>
