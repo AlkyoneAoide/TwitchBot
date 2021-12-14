@@ -26,11 +26,24 @@ function onMessageHandler (target, context, msg, self) {
     // Ignore messages from the bot
     if (self) { return }
 
-    // Remove whitespace from chat message
-    const message = msg.trim()
+    let obj = {"twitch":{}}
 
-    // instead of calling overlay() send message via websocket
-    // overlay(message)
+    obj.twitch.userState = context
+    // console.log(context)
+    // Remove whitespace from chat message
+    obj.twitch.message = msg.trim()
+    obj.twitch.color = context.color
+    // v FIGURE OUT WHAT THIS (TYPE) IS v
+    obj.twitch.type = context['message-type']
+    obj.twitch.twitchEmotes = context.emotes
+
+    // send to overlay through websocket
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSockets.WebSocket.OPEN) {
+            client.send(JSON.stringify(obj))
+            // console.log(obj + " sent to " + client)
+        }
+    })
 }
 
 // Called every time the bot connects to Twitch chat
@@ -41,27 +54,30 @@ function onConnectedHandler (addr, port) {
 // Called every time there is a websocket message
 function webSocketMessage(ws, data) {
     data = String(data)
-    let obj = {}
+    let obj = {"nowPlaying":{}}
 
     // Turn webnowplaying output into JSON
     for (const line of data.split('\n')) {
         let key = line.slice(0, line.indexOf(':')).toLowerCase()
         let value = line.slice(line.indexOf(':') + 1)
-        obj[key] = value
+        obj.nowPlaying[key] = value
     }
 
     // If the connected websocket is ready and not the server, send JSON
     wss.clients.forEach(client => {
         if (client !== ws && client.readyState === WebSockets.WebSocket.OPEN) {
             client.send(JSON.stringify(obj))
-            console.log(obj + " sent to " + client)
+            // console.log(obj + " sent to " + client)
         }
     })
 }
 
 // Called every time the bot connects to a new websocket client
 function webSocketConnected(ws) {
-    ws.on('message', data => webSocketMessage(ws, data))
+    ws.send(JSON.stringify(clientSettings))
+    if (clientSettings.settings.music.webnowplaying) {
+        ws.on('message', data => webSocketMessage(ws, data))
+    }
 }
 
 main()
