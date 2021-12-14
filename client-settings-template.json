@@ -1,7 +1,14 @@
 {
-  "music": {
-    "webnowplaying" : false,
-    "xPos" : 0,
-    "yPos" : 0
+  "settings" : {
+    "music": {
+      "webnowplaying" : false,
+      "xOffset" : 0,
+      "yOffset" : 0,
+      "width" : 500,
+      "height" : 300
+    },
+    "chat" : {
+      "bias" : 0.75
+    }
   }
 }
