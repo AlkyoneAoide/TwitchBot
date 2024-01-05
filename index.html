@@ -2,7 +2,9 @@
   <head>
     <style>
       body {
-        background-color: #009933;
+        background-color: rgba(0, 0, 0, 0);
+        margin: 0px auto;
+        overflow: hidden;
       }
 
       .msg {
@@ -18,11 +20,51 @@
       }
 
       #music {
+        font-family: verdana;
         z-index: 1;
         position: fixed;
         bottom: 0;
         overflow: hidden;
       }
+
+      #music img {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+
+      #musicInfo {
+        position: absolute;
+        left: 50%;
+        top: 30%;
+        margin-left: 5%;
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      #musicInfo p {
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        margin: 5%;
+      }
+
+      #musicInfoTitle {
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      #musicInfoArtist {
+        font-size: 12px;
+      }
+
+      #musicInfoAlbum {
+        font-size: 16px;
+      }
+
     </style>
   </head>
   <body>
@@ -33,53 +75,154 @@
     </script>
     <script>
       settings = {}
-
-      function insertEmotes(msg) {
-        //TO DO BUILD THIS FUNCTION
-        // use this: https://gist.github.com/chuckxD/377211b3dd3e8ca8dc505500938555eb
-        // and this: https://static-cdn.jtvnw.net/emoticons/v2/emotesv2_4c3b4ed516de493bbcd2df2f5d450f49/static/light/1.0
-
-        $('<div>', { text: msg.message })
-          .addClass('msg')
-          .css({ 'font-size': fontSize, 'color' : msg.color, 'top': `${textPosition}vh` })
-      }
-
+      state = {}
+      
       // remap x from range minBefore,maxBefore to range minAfter,maxAfter (ex. Math.random(), 0, 1, 0, 10)
       function remapInt(x, minBefore, maxBefore, minAfter, maxAfter) {
         const xIn0To1 = (x - minBefore) / (maxBefore - minBefore)
         const xInAfterRange = xIn0To1 * (maxAfter - minAfter) + minAfter
-       return Math.floor(xInAfterRange)
+        return Math.floor(xInAfterRange)
       }
-
+      
       // Output with message text
       function chatOverlay(msg) {
-        const x = Math.random()
+        const randomYPos = Math.random()
         const bias = settings.chat.bias
-        const textPosition = (x < bias) ? remapInt(x, 0, bias, 0, 50) : remapInt(x, bias, 1, 50, 100)
         const textSpeed = remapInt(msg.message.length, 500, 0, 3500, 5000)
-        const fontSize = remapInt(Math.random(), 0, 1, 30, 45)
-
+        
+        msg.textPosition = (randomYPos < bias) ? remapInt(randomYPos, 0, bias, 0, 50)
+          : remapInt(randomYPos, bias, 1, 50, 95)
+        msg.fontSize = remapInt(Math.random(), 0, 1, 30, 45)
+        
         //NEED TO FIGURE OUT WHAT MESSAGE TYPE IS
-
+        
         const element = insertEmotes(msg)
-
+        
         $('body').append( element )
-
+        
         function animate() {
           const msgWidth = element.width()
           element.css({ 'right': `${-msgWidth}px` })
-            .animate({ right: '100vw' }, textSpeed, 'linear', () => element.remove())
+          .animate({ right: '100vw' }, textSpeed, 'linear', () => element.remove())
         }
-  
+        
         window.requestAnimationFrame(animate)
+      }
+      
+      function insertEmotes(msg) {
+        //TODO: BUILD THIS FUNCTION
+        // use this: https://gist.github.com/chuckxD/377211b3dd3e8ca8dc505500938555eb
+        // and this: https://static-cdn.jtvnw.net/emoticons/v2/emotesv2_4c3b4ed516de493bbcd2df2f5d450f49/static/light/1.0
+
+        return $('<div>', { text: msg.message })
+          .addClass('msg')
+          .css({ 'font-size': msg.fontSize, 'color' : msg.color,
+            'top': `${msg.textPosition}vh` })
       }
 
       // Overlay for the music display, origin is bottom left corner
       function musicOverlay(msg) {
-        //DO THIS
-        div = document.getElementById('music')
-        // div.appendChild(document.createTextNode(JSON.stringify(msg)))
+        if (msg.cover) {
+          state.music.cover = msg.cover
+          
+          if (document.getElementById('musicImg'))
+            document.getElementById('musicImg').src = msg.cover
+          else
+            $('#music').append($('<img>').attr('id', 'musicImg').attr('src', msg.cover)
+              .css({ 'max-width' : settings.music.height, 'width' : settings.music.height,
+                'max-height' : settings.music.height, 'height' : settings.music.height }))
+        }
+
+        // msg.state 1=playing state 2=paused state 0=not started
+        // hide when state=0 or 2, volume=0, or messages stop
+                
+        // msg.position song position in h:min:sec
+        // msg.duration song duration in h:min:sec\
+        if (msg.position) {
+          state.music.position = msg.position
+          //re render position (duration comes before position this is safe)
+        }
+
+        if (msg.duration)
+          state.music.duration = msg.duration
+
+        if (msg.title || msg.artist || msg.album) {
+          if (!document.getElementById('musicInfo')) {
+            musicInfo = document.createElement('div')
+            musicInfo.id = 'musicInfo'
+            
+            musicInfo.style.width = settings.music.height * 3 / 5
+            musicInfo.style.maxWidth = settings.music.height * 3 / 5
+            
+            titleText = document.createElement('p')
+            titleText.id = 'musicInfoTitle'
+
+            artistText = document.createElement('p')
+            artistText.id = 'musicInfoArtist'
+
+            albumText = document.createElement('p')
+            albumText.id = 'musicInfoAlbum'
+
+            musicInfo.appendChild(titleText)
+            musicInfo.appendChild(artistText)
+            musicInfo.appendChild(albumText)
+
+            document.getElementById('music').appendChild(musicInfo)
+          }
+
+          let msgType
+          let msgContents
+
+          if (msg.title) {
+            msgType = 'musicInfoTitle'
+            msgContents = msg.title
+            state.music.title = msg.title
+          } else if (msg.artist) {
+            msgType = 'musicInfoArtist'
+            msgContents = msg.artist
+            state.music.artist = msg.artist
+          } else if (msg.album) {
+            msgType = 'musicInfoAlbum'
+            msgContents = msg.album
+            state.music.album = msg.album
+          }
+
+          textParent = document.getElementById(msgType)
+          textParent.replaceChildren()
+
+          text = document.createTextNode(msgContents)
+          textParent.appendChild(text)
+        }
+        
         console.log(msg)
+      }
+
+      function messageHandler(data) {
+        dataObj = JSON.parse(data)
+        console.log("Message received: " + data)
+
+        if (dataObj.settings) {
+          settings = dataObj.settings
+          if (settings.music.webnowplaying) {
+            state.music = {}
+
+            $('body').append($('<div>').attr('id', 'music')
+              .css({ 'max-width' : settings.music.height * 2, 'width' : settings.music.height * 2,
+                'max-height' : settings.music.height, 'height' : settings.music.height }))
+          }
+        }
+
+        if (dataObj.twitch) {
+          chatOverlay(dataObj.twitch)
+        }
+
+        if (dataObj.nowPlaying && settings.music.webnowplaying) {
+          musicOverlay(dataObj.nowPlaying)
+        }
+      }
+
+      function reconnect() {
+        setTimeout(() => connect(), 5000)
       }
 
       function connect() {
@@ -89,31 +232,6 @@
         socket.onmessage = (event => messageHandler(event.data))
         socket.onerror = (err => {console.log("socket error: " + err); socket.close()})
         socket.onclose = (event => {console.log("socket closed: " + event); reconnect()})
-
-        function messageHandler(data) {
-          data = JSON.parse(data)
-
-          if (data.settings) {
-            settings = data.settings
-            if (settings.music.webnowplaying) {
-              $('body').append($('<div>').attr('id', 'music')
-                .css({ 'max-width' : settings.music.width, 'width' : settings.music.width,
-                  'max-height' : settings.music.height, 'height' : settings.music.height }))
-            }
-          }
-
-          if (data.twitch) {
-            chatOverlay(data.twitch)
-          }
-
-          if (data.nowPlaying && settings.music.webnowplaying) {
-            musicOverlay(data.nowPlaying)
-          }
-        }
-
-        function reconnect() {
-          setTimeout(() => connect(), 5000)
-        }
       }
 
       connect()

@@ -1,6 +1,6 @@
 // "imports"
-const tmi = require('tmi.js')
-const WebSockets = require('./ws/index.js')
+const tmi = require('./libs/node_modules/tmi.js')
+const WebSockets = require('./libs/node_modules/ws/index.js')
 
 // Define configuration options
 const tmiSettings = require('./channel-settings.json')
@@ -32,6 +32,8 @@ function onMessageHandler (target, context, msg, self) {
     // console.log(context)
     // Remove whitespace from chat message
     obj.twitch.message = msg.trim()
+    console.log(obj.twitch.message)
+
     obj.twitch.color = context.color
     // v FIGURE OUT WHAT THIS (TYPE) IS v
     obj.twitch.type = context['message-type']
@@ -40,8 +42,9 @@ function onMessageHandler (target, context, msg, self) {
     // send to overlay through websocket
     wss.clients.forEach(client => {
         if (client.readyState === WebSockets.WebSocket.OPEN) {
-            client.send(JSON.stringify(obj))
-            // console.log(obj + " sent to " + client)
+            objAsString = JSON.stringify(obj)
+            client.send(objAsString)
+            console.log(objAsString + " sent to " + client)
         }
     })
 }
