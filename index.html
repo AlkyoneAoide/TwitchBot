@@ -10,7 +10,7 @@
       .msg {
         font-family: verdana;
         font-size: 35px;
-        font-weight: 700;
+        font-weight: bold;
         color: white;
         -webkit-text-stroke-width: 2px;
         -webkit-text-stroke-color: black;
@@ -21,6 +21,10 @@
 
       #music {
         font-family: verdana;
+        font-size: 20px;
+        color: black;
+        /* -webkit-text-stroke-width: 1px; */
+        /* -webkit-text-stroke-color: white; */
         z-index: 1;
         position: fixed;
         bottom: 0;
@@ -36,8 +40,8 @@
       #musicInfo {
         position: absolute;
         left: 50%;
-        top: 30%;
-        margin-left: 5%;
+        top: 20%;
+        margin-left: 2.5%;
         text-align: center;
         overflow: hidden;
         white-space: nowrap;
@@ -49,20 +53,20 @@
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        margin: 5%;
+        margin: 2.5%;
       }
 
       #musicInfoTitle {
-        font-size: 16px;
+        font-size: 25px;
         font-weight: bold;
       }
 
       #musicInfoArtist {
-        font-size: 12px;
+        font-size: 20px;
       }
 
       #musicInfoAlbum {
-        font-size: 16px;
+        font-size: 25px;
       }
 
     </style>
@@ -151,8 +155,8 @@
             musicInfo = document.createElement('div')
             musicInfo.id = 'musicInfo'
             
-            musicInfo.style.width = settings.music.height * 3 / 5
-            musicInfo.style.maxWidth = settings.music.height * 3 / 5
+            musicInfo.style.width = settings.music.height
+            musicInfo.style.maxWidth = settings.music.height
             
             titleText = document.createElement('p')
             titleText.id = 'musicInfoTitle'
