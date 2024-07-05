@@ -12,13 +12,12 @@ const tmiServer = new tmi.client(tmiSettings)
 const wss = new WebSockets.WebSocketServer({ port:8974 })
 
 function main() {
-
 	// Register our event handlers (defined below) and connect
 	tmiServer.on('message', onMessageHandler)
 	tmiServer.on('connected', onConnectedHandler)
 	tmiServer.connect()
 
-    wss.on('connection', webSocketConnected )
+    wss.on('connection', webSocketConnected)
 }
 
 // Called every time a message comes in

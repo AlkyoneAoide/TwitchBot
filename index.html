@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <style>
@@ -23,8 +24,6 @@
         font-family: verdana;
         font-size: 20px;
         color: black;
-        /* -webkit-text-stroke-width: 1px; */
-        /* -webkit-text-stroke-color: white; */
         z-index: 1;
         position: fixed;
         bottom: 0;
@@ -69,6 +68,18 @@
         font-size: 25px;
       }
 
+      #musicProgressParent {
+        width: 100%;
+        height: 50%;
+        border-radius: 5%;
+        color: black;
+      }
+
+      #musicProgress {
+        height: 80%;
+        border-radius: 5%;
+        color: gray;
+      }
     </style>
   </head>
   <body>
@@ -78,6 +89,9 @@
       crossorigin="anonymous">
     </script>
     <script>
+      // TODO: restructure to pure js, no jquery
+
+      // locals sent from bot.js
       settings = {}
       state = {}
       
@@ -98,7 +112,8 @@
           : remapInt(randomYPos, bias, 1, 50, 95)
         msg.fontSize = remapInt(Math.random(), 0, 1, 30, 45)
         
-        //NEED TO FIGURE OUT WHAT MESSAGE TYPE IS
+        //TODO: NEED TO FIGURE OUT WHAT MESSAGE TYPE IS
+        // e.g. put dono in a static position based on amount
         
         const element = insertEmotes(msg)
         
@@ -138,19 +153,71 @@
         }
 
         // msg.state 1=playing state 2=paused state 0=not started
-        // hide when state=0 or 2, volume=0, or messages stop
+        if (msg.state) {
+          state.music.state = msg.state
+
+          // TODO: if state=0 or state=2 start fading
+        }
                 
         // msg.position song position in h:min:sec
-        // msg.duration song duration in h:min:sec\
+        // msg.duration song duration in h:min:sec
         if (msg.position) {
+          // if it doesnt exist, create required elements for music progress bar
+          if (!document.getElementById('musicProgress') && document.getElementById('musicInfo')) {
+            musicProgressBarParent = document.createElement('div')
+            musicProgressBarParent.id = 'musicProgressParent'
+            document.getElementById('musicInfo').appendChild(musicProgressBarParent)
+
+            // TODO: update progress max/value
+            musicProgressBar = document.createElement('progress')
+            musicProgressBar.id = 'musicProgress'
+            musicProgressBarParent.appendChild(musicProgressBar)
+
+            // TODO: attach label to progress element
+            musicProgressBarLabel = document.createElement('label')
+            musicProgressBarLabel.id = 'musicProgressLabel'
+            musicProgressBarParent.appendChild(musicProgressBarLabel)
+          }
+
+          // update song position
           state.music.position = msg.position
-          //re render position (duration comes before position this is safe)
+
+          // get pos and dur as string arrays in the form [hh, mm, ss]
+          pos = state.music.position.split(':')
+          dur = state.music.duration.split(':')
+
+          // convert pos to seconds
+          posSeconds = parseInt(pos[pos.length - 1])
+          posSeconds += parseInt(pos[pos.length - 2]) * 60
+          if (pos.length === 3)
+            posSeconds += parseInt(pos[pos.length - 3]) * 60 * 60
+
+          // convert dur to seconds
+          durSeconds = parseInt(dur[dur.length - 1])
+          durSeconds += parseInt(dur[dur.length - 2]) * 60
+          if (dur.length === 3)
+            durSeconds += parseInt(pos[dur.length - 3]) * 60 * 60
+
+          // get the amount played of a song as a percent
+          state.music.percentElapsed = remapInt(posSeconds, 0, durSeconds, 0, 100)
+
+          // update progress with the percent elapsed
+          // TODO: switch to progress element instead of div width
+          if (document.getElementById('musicProgress'))
+            document.getElementById('musicProgress').width = state.music.percentElapsed
         }
 
+        // set duration; this message only appears once at the beginning of song
+        // TODO: temp disable progress bar if duration is missing and reenable when it comes back
         if (msg.duration)
           state.music.duration = msg.duration
 
+        // show music info on screen
+        // TODO: centering and cutoff is kinda broken,
+        // make it so title/album/artist is always centered,
+        // always ends in elipses if too long, and always respects length
         if (msg.title || msg.artist || msg.album) {
+          // create template if it doesn't exist
           if (!document.getElementById('musicInfo')) {
             musicInfo = document.createElement('div')
             musicInfo.id = 'musicInfo'
@@ -174,6 +241,8 @@
             document.getElementById('music').appendChild(musicInfo)
           }
 
+          // figure out which info this message has, and apply it accordingly
+          // TODO: adapt for in case these get condensed into one message (title, album, artist in one json)
           let msgType
           let msgContents
 
@@ -201,10 +270,12 @@
         console.log(msg)
       }
 
+      // what to do when receiving data through websocket
       function messageHandler(data) {
         dataObj = JSON.parse(data)
         console.log("Message received: " + data)
 
+        // settings section (should only be sent once on connect)
         if (dataObj.settings) {
           settings = dataObj.settings
           if (settings.music.webnowplaying) {
@@ -216,19 +287,23 @@
           }
         }
 
+        // chat section
         if (dataObj.twitch) {
           chatOverlay(dataObj.twitch)
         }
 
+        // music data/overlay section
         if (dataObj.nowPlaying && settings.music.webnowplaying) {
           musicOverlay(dataObj.nowPlaying)
         }
       }
 
+      // reconnect to websocket with 5 second timeout
       function reconnect() {
         setTimeout(() => connect(), 5000)
       }
 
+      // connect to websocket, and register connection handlers
       function connect() {
         const socket = new WebSocket("ws://127.0.0.1:8974")
 
